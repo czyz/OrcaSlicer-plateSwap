@@ -15200,7 +15200,7 @@ void publish(Model &model, SaveStrategy strategy) {
 }
 
 // BBS: backup
-int Plater::export_3mf(const boost::filesystem::path& output_path, SaveStrategy strategy, int export_plate_idx, Export3mfProgressFn proFn, bool use_plate_changer_all)
+int Plater::export_3mf(const boost::filesystem::path& output_path, SaveStrategy strategy, int export_plate_idx, Export3mfProgressFn proFn, bool use_plate_changer_all, bool start_with_new_plate, bool end_with_new_plate)
 {
     int ret = 0;
     //if (p->model.objects.empty()) {
@@ -15338,7 +15338,8 @@ int Plater::export_3mf(const boost::filesystem::path& output_path, SaveStrategy 
     store_params.project = &p->project;
     store_params.strategy = strategy | SaveStrategy::Zip64;
     store_params.use_plate_changer_all = use_plate_changer_all;
-
+    store_params.start_with_new_plate   = start_with_new_plate;
+    store_params.end_with_new_plate    = end_with_new_plate;
 
     // get type and color for platedata
     auto* filament_color = dynamic_cast<const ConfigOptionStrings*>(cfg.option("filament_colour"));
@@ -15853,7 +15854,7 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn, bool us
 
     if (use_3mf) {
         // Process gcode
-        const int result = send_gcode(plate_idx, nullptr, use_plate_changer_all);
+        const int result = send_gcode(plate_idx, nullptr, use_plate_changer_all, false, false);
 
         if (result < 0) {
             wxString msg = _L("Abnormal print file data. Please slice again");
@@ -15866,7 +15867,7 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn, bool us
 
     p->export_gcode(fs::path(), false, std::move(upload_job));
 }
-int Plater::send_gcode(int plate_idx, Export3mfProgressFn proFn, bool use_plate_changer_all)
+int Plater::send_gcode(int plate_idx, Export3mfProgressFn proFn, bool use_plate_changer_all, bool start_with_new_plate, bool end_with_new_plate)
 {
     int result = 0;
     /* generate 3mf */
@@ -15890,12 +15891,12 @@ int Plater::send_gcode(int plate_idx, Export3mfProgressFn proFn, bool use_plate_
         strategy = SaveStrategy::Silence | SaveStrategy::SplitModel | SaveStrategy::WithGcode;
 #endif
 
-    result = export_3mf(p->m_print_job_data._3mf_path, strategy, plate_idx, proFn, use_plate_changer_all);
+    result = export_3mf(p->m_print_job_data._3mf_path, strategy, plate_idx, proFn, use_plate_changer_all, start_with_new_plate, end_with_new_plate);
 
     return result;
 }
 
-int Plater::export_config_3mf(int plate_idx, Export3mfProgressFn proFn, bool use_plate_changer_all)
+int Plater::export_config_3mf(int plate_idx, Export3mfProgressFn proFn, bool use_plate_changer_all, bool start_with_new_plate, bool end_with_new_plate)
 {
     int result = 0;
     /* generate 3mf */
@@ -15911,7 +15912,7 @@ int Plater::export_config_3mf(int plate_idx, Export3mfProgressFn proFn, bool use
     }
 
     SaveStrategy strategy = SaveStrategy::Silence | SaveStrategy::SkipModel | SaveStrategy::WithSliceInfo | SaveStrategy::SkipAuxiliary;
-    result = export_3mf(p->m_print_job_data._3mf_config_path, strategy, plate_idx, proFn, use_plate_changer_all);
+    result = export_3mf(p->m_print_job_data._3mf_config_path, strategy, plate_idx, proFn, use_plate_changer_all, start_with_new_plate, end_with_new_plate);
 
     return result;
 }
